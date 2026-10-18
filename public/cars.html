@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>تقرير السيارة — افحص أي سيارة برقم الشاصي</title>
+<meta name="description" content="أدخل رقم الشاصي (VIN) واحصل على مواصفات السيارة، حملات الاستدعاء الرسمية، وعدد شكاوى المالكين — مجاناً." />
+<link rel="icon" href="/favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0d0f12; --panel: #15181d; --line: #262a31; --ink: #eef0f2;
+    --muted: #8a919c; --accent: #ffb000; --danger: #ff5a4e; --ok: #3ddc84;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Tajawal", system-ui, sans-serif; line-height: 1.6;
+    background-image: repeating-linear-gradient(90deg, transparent 0 79px, #ffffff06 79px 80px);
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 48px 20px 80px; }
+  .tag { display: inline-block; font-family: "JetBrains Mono", monospace; font-size: 12px;
+    color: var(--bg); background: var(--accent); padding: 4px 10px; letter-spacing: .08em; }
+  h1 { font-size: clamp(36px, 7vw, 68px); font-weight: 900; line-height: 1.05; margin: 18px 0 12px; }
+  h1 span { color: var(--accent); }
+  .lead { color: var(--muted); font-size: 19px; max-width: 620px; margin: 0 0 36px; }
+  form { display: flex; gap: 0; border: 2px solid var(--accent); background: var(--panel); }
+  input {
+    flex: 1; min-width: 0; background: transparent; border: 0; color: var(--ink); padding: 18px 20px;
+    font-family: "JetBrains Mono", monospace; font-size: 20px; letter-spacing: .12em; direction: ltr; text-align: left;
+    text-transform: uppercase; outline: none;
+  }
+  button { background: var(--accent); color: var(--bg); border: 0; padding: 0 28px; font: 700 18px "Tajawal"; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: wait; }
+  .hint { color: var(--muted); font-size: 14px; margin-top: 10px; }
+  .hint a { color: var(--accent); cursor: pointer; text-decoration: underline; }
+  .err { color: var(--danger); margin-top: 18px; font-weight: 500; }
+  .report { margin-top: 48px; display: none; }
+  .head { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: 12px;
+    border-bottom: 1px solid var(--line); padding-bottom: 18px; }
+  .head h2 { margin: 0; font-size: 36px; font-weight: 900; }
+  .vin { font-family: "JetBrains Mono", monospace; color: var(--muted); direction: ltr; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); margin: 24px 0; border: 1px solid var(--line); }
+  .stat { background: var(--panel); padding: 20px; }
+  .stat b { display: block; font: 700 38px "JetBrains Mono", monospace; }
+  .stat small { color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+  .cell { background: var(--panel); padding: 14px 16px; }
+  .cell small { color: var(--muted); display: block; font-size: 13px; }
+  h3 { margin: 40px 0 14px; font-size: 22px; }
+  .recall { border-right: 4px solid var(--danger); background: var(--panel); padding: 16px 20px; margin-bottom: 12px; }
+  .recall .meta { font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--muted); direction: ltr; text-align: right; }
+  .recall p { margin: 8px 0 0; direction: ltr; text-align: left; font-size: 15px; color: #cfd3d8; }
+  .none { color: var(--ok); }
+  .bar { display: flex; align-items: center; gap: 12px; margin: 8px 0; direction: ltr; }
+  .bar span { flex: 0 0 45%; font-size: 13px; color: #cfd3d8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar i { display: block; height: 10px; background: var(--accent); }
+  .bar em { font: 500 13px "JetBrains Mono"; color: var(--muted); font-style: normal; }
+  .biz { margin-top: 64px; border: 1px dashed var(--line); padding: 24px; color: var(--muted); }
+  .biz b { color: var(--ink); }
+  footer { margin-top: 40px; color: var(--muted); font-size: 13px; }
+  @media (max-width: 600px) { .stats { grid-template-columns: 1fr; } button { padding: 0 16px; } input { font-size: 16px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="tag">VIN · REPORT</span>
+  <h1>اعرف <span>كل شيء</span><br />عن السيارة قبل أن تشتريها</h1>
+  <p class="lead">أدخل رقم الشاصي (17 خانة) واحصل فوراً على المواصفات الأصلية، حملات الاستدعاء الرسمية، وأكثر الأعطال التي يشتكي منها المالكون.</p>
+
+  <form id="f">
+    <input id="vin" maxlength="17" placeholder="1HGCM82633A004352" autocomplete="off" spellcheck="false" />
+    <button id="btn">افحص</button>
+  </form>
+  <div class="hint">جرّب مثالاً: <a data-vin="1HGCM82633A004352">هوندا أكورد</a> · <a data-vin="5YJ3E1EA7JF000316">تسلا موديل 3</a> · <a data-vin="1FTFW1ET5DFC10312">فورد F-150</a></div>
+  <div class="err" id="err"></div>
+
+  <section class="report" id="report">
+    <div class="head"><h2 id="title"></h2><div class="vin" id="vinOut"></div></div>
+    <div class="stats">
+      <div class="stat"><b id="sRecalls">0</b><small>حملات استدعاء</small></div>
+      <div class="stat"><b id="sComplaints">0</b><small>شكاوى مالكين</small></div>
+      <div class="stat"><b id="sYear">—</b><small>سنة الصنع</small></div>
+    </div>
+    <div class="grid" id="specs"></div>
+    <h3>حملات الاستدعاء الرسمية</h3>
+    <div id="recalls"></div>
+    <h3>أكثر الأجزاء التي يشتكي منها المالكون</h3>
+    <div id="complaints"></div>
+  </section>
+
+  <div class="biz">
+    <b>💡 كيف تحوّلها إلى مشروع؟</b><br />
+    اعرض الفحص الأساسي مجاناً لجذب الزوار، ثم بِع تقريراً مفصّلاً (PDF) لمعارض السيارات المستعملة والمشترين، أو قدّم خدمة "فحص قبل الشراء" بالتعاون مع ورش محلية.
+  </div>
+
+  <footer>البيانات من المصادر العامة الرسمية للإدارة الوطنية الأمريكية لسلامة المرور (NHTSA). المعلومات أدق للسيارات المصنّعة أو المباعة في أمريكا الشمالية.</footer>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const labels = {
+    make: "الشركة", model: "الموديل", trim: "الفئة", body: "نوع الهيكل", vehicleType: "نوع المركبة",
+    doors: "الأبواب", engine: "المحرك", fuel: "الوقود", transmission: "ناقل الحركة", drive: "نظام الدفع",
+    manufacturer: "المصنّع", plant: "مكان التصنيع", airbags: "الوسائد الهوائية الأمامية", abs: "نظام ABS",
+  };
+
+  async function run(vin) {
+    $("err").textContent = "";
+    $("btn").disabled = true; $("btn").textContent = "جارٍ الفحص…";
+    try {
+      const res = await fetch("/api/car-report?vin=" + encodeURIComponent(vin));
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "حدث خطأ");
+      render(d);
+      history.replaceState(null, "", "?vin=" + d.vin);
+    } catch (e) {
+      $("report").style.display = "none";
+      $("err").textContent = e.message;
+    } finally {
+      $("btn").disabled = false; $("btn").textContent = "افحص";
+    }
+  }
+
+  function render(d) {
+    const v = d.vehicle;
+    $("title").textContent = [v.year, v.make, v.model].filter(Boolean).join(" ");
+    $("vinOut").textContent = d.vin;
+    $("sRecalls").textContent = d.recalls.length;
+    $("sComplaints").textContent = d.complaintsCount;
+    $("sYear").textContent = v.year || "—";
+    $("specs").innerHTML = Object.entries(labels)
+      .filter(([k]) => v[k])
+      .map(([k, l]) => `<div class="cell"><small>${l}</small>${esc(v[k])}</div>`).join("");
+    $("recalls").innerHTML = d.recalls.length
+      ? d.recalls.map((r) => `<div class="recall"><div class="meta">${esc(r.id)} · ${esc(r.date)} · ${esc(r.component)}</div><p>${esc(r.summary)}</p></div>`).join("")
+      : `<p class="none">✓ لا توجد حملات استدعاء مسجّلة لهذا الموديل.</p>`;
+    const max = Math.max(1, ...d.topComplaintComponents.map((c) => c[1]));
+    $("complaints").innerHTML = d.topComplaintComponents.length
+      ? d.topComplaintComponents.map(([n, c]) => `<div class="bar"><span title="${esc(n)}">${esc(n)}</span><i style="width:${(c / max) * 45}%"></i><em>${c}</em></div>`).join("")
+      : `<p class="none">✓ لا توجد شكاوى مسجّلة.</p>`;
+    $("report").style.display = "block";
+    $("report").scrollIntoView({ behavior: "smooth" });
+  }
+
+  $("f").addEventListener("submit", (e) => { e.preventDefault(); run($("vin").value.trim()); });
+  document.querySelectorAll("[data-vin]").forEach((a) => a.addEventListener("click", () => { $("vin").value = a.dataset.vin; run(a.dataset.vin); }));
+  const initial = new URLSearchParams(location.search).get("vin");
+  if (initial) { $("vin").value = initial; run(initial); }
+</script>
+</body>
+</html>
